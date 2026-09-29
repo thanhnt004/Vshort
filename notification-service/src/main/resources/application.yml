@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: "jdbc:postgresql://vs_postgres:5432/noti-db"
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  kafka:
+    consumer:
+      # Địa chỉ của Kafka Broker
+      bootstrap-servers: vs_kafka:9092
+
+      # Tên group id mặc định cho consumer
+      group-id: noti-group
+
+      # Hành vi khi không có offset ban đầu (earliest: đọc từ đầu, latest: đọc message mới nhất)
+      auto-offset-reset: earliest
+
+      # Lớp giải mã (deserialize) cho key và value (dạng String)
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${BREVO_USERNAME:}
+    password: ${BREVO_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery-service:8761/eureka/ # Địa chỉ của Eureka Server
+  instance:
+    prefer-ip-address: true
+brevo:
+  api-key: ${BREVO_API_KEY}
+  sender:
+    email: nhthanh2k4@gmail.com
+    name: Sellico

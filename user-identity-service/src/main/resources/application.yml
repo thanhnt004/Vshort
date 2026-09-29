@@ -1,0 +1,55 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: user-identity-service
+  datasource:
+    url: "jdbc:postgresql://vs_postgres:5432/auth_db"
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3s
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery-service:8761/eureka/ # Địa chỉ của Eureka Server
+  instance:
+    prefer-ip-address: true
+app:
+  frontend:
+    base-url: ${FRONTEND_URL}
+  jwt:
+    alg: RS256
+    issuer: 'NULL'
+    ttlSeconds:
+      ACCESS: 900
+      OAUTH_STATE: 300
+      RESET_PASSWORD: 1800
+      VERIFY_EMAIL: 86400
+  oauth2:
+    provider: google,facebook
+  cookie:
+    domain: ${COOKIE_DOMAIN:localhost}
+    secure: ${COOKIE_SECURE:false}

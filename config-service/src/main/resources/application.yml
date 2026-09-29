@@ -1,0 +1,13 @@
+
+spring:
+  application:
+    name: config-servie
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/thanhnt004/Vshort-config.git
+          default-label: main
+          search-paths: '{application}'
+server:
+  port: 8888
