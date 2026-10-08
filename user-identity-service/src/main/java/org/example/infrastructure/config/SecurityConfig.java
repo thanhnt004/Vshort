@@ -21,13 +21,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/v1/auth/password/change-password").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.decoder(jwtDecoder)// Sử dụng decoder nội bộ
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter)
                         )
-
                 );
 
         return http.build();

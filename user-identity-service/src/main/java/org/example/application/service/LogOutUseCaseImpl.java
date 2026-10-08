@@ -36,12 +36,11 @@ public class LogOutUseCaseImpl implements LogoutUseCase {
 
     @Override
     public void logoutAll(String refreshToken) {
-
         String hashedOldToken = CryptoUtils.hash(refreshToken);
         Map<String, String> tokenData = refreshTokenPort.getTokenData(hashedOldToken);
-        if (tokenHandler.tokenIsValid(tokenData))
+        if (!tokenHandler.tokenIsValid(tokenData))
             throw new AccountException(AccountErrorCode.INVALID_TOKEN);
-        Account account = accountRepositoryPort.findById(Long.valueOf(tokenData.get("userId")))
+        Account account = accountRepositoryPort.findById(Long.valueOf(tokenData.get("user_id")))
                 .orElseThrow(() -> new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
         // Chỉ cần tăng version, MỌI refresh token cũ của user này sẽ lập tức vô hiệu hóa

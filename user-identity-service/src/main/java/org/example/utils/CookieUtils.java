@@ -38,7 +38,7 @@ public class CookieUtils {
         return cookie;
     }
     public void addCookie(HttpServletResponse response, String name, String value) {
-        Cookie cookie = createCookie(value, name);
+        Cookie cookie = createCookie(name, value);
         response.addCookie(cookie);
     }
     public void clearCookie(HttpServletResponse response, String cookieName) {
@@ -53,7 +53,10 @@ public class CookieUtils {
         cookie.setAttribute("SameSite", sameSite);
         response.addCookie(cookie);
     }
-
+    public String readCookieValue(HttpServletRequest req, String name) {
+        var cookie = readCookie(req, name);
+        return cookie.map(Cookie::getValue).orElse("");
+    }
     public Optional<Cookie> readCookie(HttpServletRequest req, String name) {
         if (req.getCookies() == null)
             return Optional.empty();

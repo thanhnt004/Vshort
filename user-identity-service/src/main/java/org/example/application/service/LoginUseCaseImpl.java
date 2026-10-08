@@ -30,8 +30,6 @@ public class LoginUseCaseImpl implements LoginAccountUseCase {
         Account account = accountRepositoryPort.findByIdentity(loginCommand.identity()).orElseThrow(
                 ()->new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND)
         );
-        //encode password
-        var encodedPassword = passwordEncoderPort.encode(loginCommand.password());
         //domain business: check status and password
         account.canLogin();
         if (!passwordEncoderPort.matches(loginCommand.password(),account.getPassword().getHash()))

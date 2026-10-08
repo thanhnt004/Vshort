@@ -6,10 +6,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.example.constant.RegexConstants;
-import org.example.presentation.validate.PasswordsMatch;
-import org.springframework.security.core.parameters.P;
+import org.example.presentation.validate.FieldMatch;
 
-@PasswordsMatch
+@FieldMatch
 public record RegisterRequest(
         @NotBlank(message = "Tên đăng nhập không được để trống")
         @Size(min = 4, max = 50, message = "Tên đăng nhập phải từ 4 đến 50 ký tự")

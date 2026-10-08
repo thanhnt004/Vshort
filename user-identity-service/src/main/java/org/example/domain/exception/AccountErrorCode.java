@@ -17,9 +17,12 @@ public enum AccountErrorCode implements BaseErrorCode {
     ACCOUNT_DISABLED("ACCOUNT_DISABLED", "Account is disabled. Please contact support.", 403),
     UNAUTHORIZED_ACCESS("UNAUTHORIZED_ACCESS", "Authentication is required to access this resource", 401),
     ACCOUNT_NOT_FOUND("ACCOUNT_NOT_FOUND","Account is not exist!",400),
+    PASSWORD_NOT_CORRECT("PASSWORD_NOT_CORRECT","Password is not correct!",400),
     //TOKEN
     INVALID_TOKEN("INVALID_TOKEN","Token is invalid",401),
-
+    TOKEN_EXPIRE("TOKEN_EXPIRE","Verify link is invalid or expired!",400),
+    //Validate
+    PASSWORD_REQUIRE("PASSWORD_REQUIRE","Password is not blank!",400),
     ;
     private final String code;
     private final String message;

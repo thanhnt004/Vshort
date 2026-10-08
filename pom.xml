@@ -27,6 +27,7 @@
         <module>user-identity-service</module>
         <module>common-lib</module>
         <module>notification-service</module>
+        <module>user-profile-service</module>
     </modules>
     <properties>
         <maven.compiler.source>25</maven.compiler.source>

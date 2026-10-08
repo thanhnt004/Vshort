@@ -1,6 +1,7 @@
 package org.example.application.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.application.dto.result.TokenResult;
 import org.example.application.port.in.RefreshTokenUseCase;
 import org.example.application.port.out.AccountRepositoryPort;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenUseCaseImpl implements RefreshTokenUseCase {
     private final RefreshTokenPort refreshTokenPort;
     private static final long REFRESH_TOKEN_VALIDITY_DAYS = 7;
@@ -30,9 +32,11 @@ public class RefreshTokenUseCaseImpl implements RefreshTokenUseCase {
     public TokenResult execute(String refreshToken) {
         String hashedOldToken = CryptoUtils.hash(refreshToken);
         Map<String, String> tokenData = refreshTokenPort.getTokenData(hashedOldToken);
+        log.info("hash token: "+ hashedOldToken+"/n raw token: "+refreshToken);
         //validate ton tai va blacklist
-        if (tokenHandler.tokenIsValid(tokenData))
+        if (!tokenHandler.tokenIsValid(tokenData))
             throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        log.info("token data: "+ tokenData.toString());
         //lay thong tin
         String userId = tokenData.get("user_id");
         String familyId = tokenData.get("family_id");
@@ -43,7 +47,7 @@ public class RefreshTokenUseCaseImpl implements RefreshTokenUseCase {
         Optional<Account> account = accountRepositoryPort.findById(Long.valueOf(userId));
         if (account.isPresent())
         {
-            if (account.get().isValidate()) {
+            if (!account.get().isValid()) {
                 // Thu hồi toàn bộ token family ngay lập tức
                 refreshTokenPort.blacklistFamily(tokenData.get("family_id"), REFRESH_TOKEN_VALIDITY_DAYS);
                 throw new AccountException(AccountErrorCode.ACCOUNT_DISABLED);
@@ -83,7 +87,7 @@ public class RefreshTokenUseCaseImpl implements RefreshTokenUseCase {
         }
         //tao moi
         String newAccessToken = tokenHandler.generateAccessToken(userId,roles,permissions);
-        String newOpaqueRefreshToken = tokenHandler.rotateTokens(hashedOldToken,newAccessToken,userId,familyId,tokenData.get("token-version"));
+        String newOpaqueRefreshToken = tokenHandler.rotateTokens(hashedOldToken,newAccessToken,userId,familyId,tokenData.get("token_version"));
         return TokenResult.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newOpaqueRefreshToken)

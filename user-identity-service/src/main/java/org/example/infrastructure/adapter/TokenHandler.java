@@ -33,6 +33,7 @@ public class TokenHandler implements TokenHandlerPort {
     @Override
     public String generateRefreshToken(String userId, String familyId,String tokenVersion) {
         String rawToken = CryptoUtils.generateSecureTokenRaw();
+        log.info("raw token "+ rawToken);
         String tokenHash = CryptoUtils.hash(rawToken);
         refreshTokenCacheAdapter.saveNewToken(tokenHash,userId,familyId,REFRESH_TOKEN_VALIDITY_DAYS,tokenVersion);
         return rawToken;
@@ -70,9 +71,6 @@ public class TokenHandler implements TokenHandlerPort {
         if (tokenData == null || tokenData.isEmpty()) {
            return false;
         }
-        if (refreshTokenCacheAdapter.isFamilyCompromised(tokenData.get("family_id"))) {
-            return false;
-        }
-        return true;
+        return !refreshTokenCacheAdapter.isFamilyCompromised(tokenData.get("family_id"));
     }
 }

@@ -1,5 +1,9 @@
 package org.example.domain.valueobject;
 
+import org.example.domain.exception.AccountErrorCode;
+import org.example.domain.exception.AccountException;
+import org.example.response.BaseErrorCode;
+
 import java.util.Objects;
 
 public class Password {
@@ -7,7 +11,7 @@ public class Password {
 
     public Password(String hash) {
         if (hash == null || hash.trim().isEmpty()) {
-            throw new IllegalArgumentException("Mật khẩu không được để trống.");
+            throw new AccountException(AccountErrorCode.PASSWORD_REQUIRE);
         }
         this.hash = hash;
     }

@@ -126,12 +126,12 @@ SELECT
     id,
     'vi',
     ' Xác thực địa chỉ email của bạn',
-    '<h1>Xin chào {{username}},</h1>
-     <p>Cảm ơn bạn đã đăng ký tài khoản tại Sellico.</p>
+    '<h1>Xin chào [[${username}]],</h1>
+     <p>Cảm ơn bạn đã đăng ký tài khoản Vshort.</p>
      <p>Vui lòng click vào đường link xác thực dưới đây để hoàn tất quá trình đăng ký:</p>
-     <h2 style="color: #ff0000; letter-spacing: 2px;">http://localhost:8100/api/v1/auth/verify-email?token={{verifytoken}}</h2>
+     <h2 style="color: #ff0000; letter-spacing: 2px;">http://localhost:8100/api/v1/auth/verify-email?token=[[${verifytoken}]]</h2>
      <p><i>Lưu ý: Mã xác thực này có hiệu lực trong vòng 15 phút.</i></p>',
-    'Xin chào {{username}}, Cảm ơn bạn đã đăng ký tài. Đường link xác thực của bạn là: http://localhost:8100/api/v1/auth/verify-email?token={{verifytoken}}. (Mã có hiệu lực trong vòng 15 phút)',
+    'Xin chào [[${username}]], Cảm ơn bạn đã đăng ký tài. Đường link xác thực của bạn là: http://localhost:8100/api/v1/auth/verify-email?token=[[${verifytoken}]]. (Mã có hiệu lực trong vòng 15 phút)',
     'system_admin'
 FROM email_templates WHERE code = 'USER_VERIFY_EMAIL';
 

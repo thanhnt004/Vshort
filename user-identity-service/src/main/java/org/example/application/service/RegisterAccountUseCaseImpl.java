@@ -2,6 +2,7 @@ package org.example.application.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.example.application.dto.command.RegisterCommand;
 import org.example.application.dto.eventpayload.AccountCreatedPayload;
 import org.example.application.dto.result.RegisterResult;
@@ -13,6 +14,7 @@ import org.example.domain.exception.AccountErrorCode;
 import org.example.domain.exception.AccountException;
 import org.example.domain.valueobject.Email;
 import org.example.domain.valueobject.Password;
+import org.example.infrastructure.cache.RedisCacheAdapter;
 import org.example.infrastructure.persistence.entity.OutBoxEventJpaEntity;
 import org.example.utils.CryptoUtils;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ public class RegisterAccountUseCaseImpl implements RegisterAccountUseCase {
     private final CachePort cachePort;
     @Override
     @Transactional
+    @SneakyThrows
     public RegisterResult execute(RegisterCommand command) {
         //validate
         if (accountRepositoryPort.isEmailExisted(command.email()))
@@ -59,15 +62,16 @@ public class RegisterAccountUseCaseImpl implements RegisterAccountUseCase {
         accountRepositoryPort.saveAccount(newAccount);
         //lưu outbox event
         String emailVerifyToken = CryptoUtils.generateSecureTokenRaw();
+        String hashToken = CryptoUtils.hash(emailVerifyToken);
         AccountCreatedPayload eventPayload = new AccountCreatedPayload(
                 newAccount.getId().toString(),
                 newAccount.getUsername(),
                 newAccount.getEmail().getValue(),
                 emailVerifyToken
         );
-        cachePort.set("verify-token:"+newAccount.getId(),emailVerifyToken,360);
+        cachePort.set(RedisCacheAdapter.verifyEmailKey +hashToken,newAccount.getId(),360);
         String payloadJson = objectMapper.writeValueAsString(eventPayload);
-        eventRepositoryPort.saveEvent("account",newAccount.getId().toString(),payloadJson,"AccountCreated");
+        eventRepositoryPort.saveEvent("account",newAccount.getId().toString(),payloadJson,"ACCOUNT_CREATED");
         return new RegisterResult(id.toString(), command.username(), command.email());
     }
 

@@ -5,23 +5,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.application.dto.result.RegisterResult;
-import org.example.application.port.in.LoginAccountUseCase;
-import org.example.application.port.in.LogoutUseCase;
-import org.example.application.port.in.RefreshTokenUseCase;
-import org.example.application.port.in.RegisterAccountUseCase;
+import org.example.application.port.in.*;
 import org.example.presentation.mapper.AccountWebMapper;
 import org.example.presentation.request.LoginRequest;
 import org.example.presentation.request.RegisterRequest;
+import org.example.presentation.request.SendEmailRequest;
 import org.example.presentation.response.TokenResponse;
 import org.example.response.ApiResponse;
 import org.example.utils.CookieUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping( "api/v1/auth")
@@ -30,7 +25,8 @@ public class AccountController {
     private final RegisterAccountUseCase registerAccountUseCase;
     private final LoginAccountUseCase loginAccountUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
-    public final LogoutUseCase logoutUsecase;
+    private final LogoutUseCase logoutUsecase;
+    private final VerifyEmailUseCase verifyEmailUseCase;
     private final AccountWebMapper mapper;
     private final CookieUtils cookieUtils;
     @PostMapping("/register")
@@ -50,7 +46,7 @@ public class AccountController {
     @PostMapping(value = "/refresh")
     public ResponseEntity<ApiResponse<TokenResponse>> refresh(HttpServletRequest request, HttpServletResponse httpResponse)
     {
-        String refreshToken = cookieUtils.readCookie(request,CookieUtils.REFRESH_TOKEN_COOKIE).toString();
+        String refreshToken = cookieUtils.readCookieValue(request,CookieUtils.REFRESH_TOKEN_COOKIE);
         var refreshTokenResult = refreshTokenUseCase.execute(refreshToken);
         cookieUtils.addCookie(httpResponse,CookieUtils.REFRESH_TOKEN_COOKIE,refreshTokenResult.refreshToken());
         var responsePayload = mapper.toResponse(refreshTokenResult);
@@ -61,7 +57,7 @@ public class AccountController {
     @PostMapping(value = "/logout")
     public ResponseEntity<?> logOut(HttpServletRequest request, HttpServletResponse response)
     {
-        String refreshToken = cookieUtils.readCookie(request,CookieUtils.REFRESH_TOKEN_COOKIE).toString();;
+        String refreshToken = cookieUtils.readCookieValue(request,CookieUtils.REFRESH_TOKEN_COOKIE);;
         logoutUsecase.logout(refreshToken);
         cookieUtils.clearCookie(response,CookieUtils.REFRESH_TOKEN_COOKIE);
         return ResponseEntity.ok(ApiResponse.success("Logout successful"));
@@ -69,9 +65,21 @@ public class AccountController {
     @PostMapping(value = "/logout-all")
     public ResponseEntity<?> logOutAll(HttpServletRequest request, HttpServletResponse response)
     {
-        String refreshToken = cookieUtils.readCookie(request,CookieUtils.REFRESH_TOKEN_COOKIE).toString();;
+        String refreshToken = cookieUtils.readCookieValue(request,CookieUtils.REFRESH_TOKEN_COOKIE);;
         logoutUsecase.logoutAll(refreshToken);
         cookieUtils.clearCookie(response,CookieUtils.REFRESH_TOKEN_COOKIE);
         return ResponseEntity.ok(ApiResponse.success("Logout from all devices successful"));
+    }
+    @PostMapping(value = "/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam(name = "token") String token)
+    {
+        var result  = verifyEmailUseCase.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+    // POST /api/v1/auth/verify-email/resend
+    @PostMapping("/verify-email/resend")
+    public ResponseEntity<?> resend(@Valid @RequestBody SendEmailRequest req) {
+        verifyEmailUseCase.resendVerifyEmail(req.getEmail());
+        return ResponseEntity.accepted().build();
     }
 }

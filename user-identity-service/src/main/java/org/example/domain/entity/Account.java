@@ -4,7 +4,6 @@ import org.example.domain.exception.AccountErrorCode;
 import org.example.domain.exception.AccountException;
 import org.example.domain.valueobject.Email;
 import org.example.domain.valueobject.Password;
-import org.example.infrastructure.persistence.entity.AccountStatus;
 
 import java.time.ZonedDateTime;
 import java.util.Set;
@@ -35,7 +34,7 @@ public class Account {
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.password = password;
-        this.status = status != null ? status : AccountStatus.ACTIVE;
+        this.status = status != null ? status : AccountStatus.INACTIVE;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.roles = roles;
@@ -67,12 +66,9 @@ public class Account {
                 defaultRoles
         );
     }
-    public boolean isValidate()
+    public boolean isValid()
     {
-        if (this.status != AccountStatus.ACTIVE) {
-            return  false;
-        }
-        return true;
+        return this.status == AccountStatus.ACTIVE;
     }
     public void canLogin() {
         if (this.status == AccountStatus.INACTIVE)
@@ -111,6 +107,10 @@ public class Account {
     {
         tokenVersion += 1;
     }
+    public void setStatus(AccountStatus accountStatus)
+    {
+        this.status = accountStatus;
+    }
     // --- GETTERS ---
     public Long getId() { return id; }
     public String getUsername() { return username; }
@@ -122,4 +122,12 @@ public class Account {
     public ZonedDateTime getUpdatedAt() { return updatedAt; }
     public Set<Role> getRoles() { return roles; }
     public int getTokenVersion(){return tokenVersion;}
+    public boolean isActive()
+    {
+        return !this.status.equals(AccountStatus.INACTIVE);
+    }
+    public void setPassword(Password password)
+    {
+        this.password = password;
+    }
 }

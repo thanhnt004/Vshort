@@ -274,6 +274,8 @@ services:
         condition: service_healthy
       discovery-service:
         condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
@@ -284,6 +286,7 @@ services:
       BREVO_API_KEY: ${BREVO_API_KEY}
       BREVO_USERNAME: ${BREVO_USERNAME}
       BREVO_PASSWORD: ${BREVO_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"

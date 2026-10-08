@@ -22,5 +22,4 @@ public interface AccountMapper {
     @Mapping(target = "password", expression = "java(new Password(accountJpaEntity.getPasswordHash()))")
     Account toDomainEntity(AccountJpaEntity accountJpaEntity);
 
-
 }

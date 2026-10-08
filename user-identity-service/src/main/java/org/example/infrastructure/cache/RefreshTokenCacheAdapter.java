@@ -1,6 +1,7 @@
 package org.example.infrastructure.cache;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.application.port.out.RefreshTokenPort;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class RefreshTokenCacheAdapter implements RefreshTokenPort {
 
     private final RedisTemplate<String,Object> redisTemplate;
@@ -71,8 +73,9 @@ public class RefreshTokenCacheAdapter implements RefreshTokenPort {
         data.put("family_id", familyId);
         data.put("token_version", tokenVersion);
         data.put("status", "ACTIVE");
-
+        log.info("token in data was save in redis: "+ data+"with key "+ rtKey);
         hashOps.putAll(rtKey, data);
         redisTemplate.expire(rtKey, validityDays, TimeUnit.DAYS);
+
     }
 }

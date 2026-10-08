@@ -8,7 +8,8 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class RedisCacheAdapter implements CachePort {
-
+    public static String verifyEmailKey = "verify-token:";
+    public static  String forgotPasswordKey = "password-token:";
     private final RedisTemplate<String, Object> redisTemplate;
 
     public RedisCacheAdapter(RedisTemplate<String, Object> redisTemplate) {

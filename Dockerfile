@@ -13,7 +13,7 @@ COPY discovery-service/pom.xml discovery-service/
 COPY api-gateway/pom.xml api-gateway/
 COPY user-identity-service/pom.xml user-identity-service/
 COPY notification-service/pom.xml notification-service/
-
+COPY user-profile-service/pom.xml user-profile-service/
 # Tải dependencies với BuildKit cache mount
 RUN --mount=type=cache,target=/root/.m2/repository \
     mvn dependency:go-offline -B --fail-never
