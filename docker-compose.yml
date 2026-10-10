@@ -1,0 +1,302 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: vs_redis
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    networks:
+      - microservice-network
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-16-alpine}
+    container_name: vs_postgres
+    restart: unless-stopped
+    command:
+        - "postgres"
+        - "-c"
+        - "wal_level=logical"
+        - "-c"
+        - "max_wal_senders=1"
+        - "-c"
+        - "max_replication_slots=1"
+        - "-c"
+        - "max_connections=300"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "5555:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - microservice-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: vs_pgadmin
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com # Email để đăng nhập pgAdmin
+      PGADMIN_DEFAULT_PASSWORD: admin        # Mật khẩu để đăng nhập pgAdmin
+      PGADMIN_CONFIG_SERVER_MODE: "False"    # Chế độ đơn giản cho môi trường dev
+    ports:
+      - "5050:80"                            # Truy cập tại http://localhost:5050
+    networks:
+      - microservice-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+  kafka:
+    image: apache/kafka:4.1.1
+    container_name: vs_kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    environment:
+      # Chế độ KRaft không cần Zookeeper
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092,CONTROLLER://:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      # Enable classic consumer group protocol for compatibility with Kafka client 3.7.x
+      KAFKA_GROUP_COORDINATOR_REBALANCE_PROTOCOLS: 'classic,consumer'
+      # Single-broker: set replication factors to 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Tạo ID cho cụm Kafka
+      KAFKA_KRAFT_CLUSTER_ID: '6L6vG_mSRuyC-D3_H7IunQ'
+    networks:
+      - microservice-network
+  debezium:
+    image: quay.io/debezium/connect:latest
+    container_name: vs_debezium
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8083:8083"
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=debezium_configs
+      - OFFSET_STORAGE_TOPIC=debezium_offsets
+      - STATUS_STORAGE_TOPIC=debezium_statuses
+    networks:
+      - microservice-network
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: vs_kafka_ui
+    restart: unless-stopped
+    ports:
+      - "8091:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://debezium:8083
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - microservice-network
+  config-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: config-service
+    container_name: config-service
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      - ../config:/config
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s # Cho Java 45s khởi động trước khi bắt đầu check
+    networks:
+      - microservice-network
+  discovery-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: discovery-service
+    container_name: discovery-service
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      config-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/eureka/apps || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    networks:
+      - microservice-network
+  api-gateway:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:4173
+    networks:
+      - microservice-network
+  user-identity-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: user-identity-service
+    container_name: user-identity-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      APP_GOOGLE_CALLBACK_URL: http://localhost:8088/api/v1/identity/auth/google/callback
+      APP_GOOGLE_FRONTEND_SUCCESS_URL: http://localhost:5173/oauth/callback
+      APP_GOOGLE_FRONTEND_ERROR_URL: http://localhost:5173/login
+      APP_FACEBOOK_CALLBACK_URL: http://localhost:8088/api/v1/identity/auth/facebook/callback
+      APP_FACEBOOK_FRONTEND_SUCCESS_URL: http://localhost:5173/oauth/callback
+      APP_FACEBOOK_FRONTEND_ERROR_URL: http://localhost:5173/login
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    networks:
+      - microservice-network
+  notification-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_USERNAME: ${BREVO_USERNAME}
+      BREVO_PASSWORD: ${BREVO_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"
+    networks:
+      - microservice-network
+networks:
+  microservice-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/notification_db}
+    username: ${DB_USERNAME:${SPRING_DATASOURCE_USERNAME:postgres}}
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:postgres}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    placeholder-replacement: false
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}}
+    consumer:
+      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}}
+      group-id: noti-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${BREVO_USERNAME:}
+    password: ${BREVO_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-service:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+brevo:
+  api-key: ${BREVO_API_KEY:}
+  sender:
+    email: nhthanh2k4@gmail.com
+    name: vshort
