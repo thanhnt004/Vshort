@@ -18,7 +18,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional
     public void createDefaultProfile(Long userId, String userName) {
-
+        if(profileRepository.existsById(userId))
+            return;
         Profile newProfile = Profile.builder()
                 .userId(userId)
                 .username(userName)

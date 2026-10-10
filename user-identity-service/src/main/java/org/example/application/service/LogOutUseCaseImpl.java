@@ -40,7 +40,20 @@ public class LogOutUseCaseImpl implements LogoutUseCase {
         Map<String, String> tokenData = refreshTokenPort.getTokenData(hashedOldToken);
         if (!tokenHandler.tokenIsValid(tokenData))
             throw new AccountException(AccountErrorCode.INVALID_TOKEN);
-        Account account = accountRepositoryPort.findById(Long.valueOf(tokenData.get("user_id")))
+
+        String userIdStr = tokenData.get("user_id");
+        if (userIdStr == null || userIdStr.isBlank()) {
+            throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        }
+
+        Long userId;
+        try {
+            userId = Long.valueOf(userIdStr.trim());
+        } catch (NumberFormatException e) {
+            throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        }
+
+        Account account = accountRepositoryPort.findById(userId)
                 .orElseThrow(() -> new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
         // Chỉ cần tăng version, MỌI refresh token cũ của user này sẽ lập tức vô hiệu hóa

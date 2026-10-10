@@ -1,16 +1,15 @@
-package com.example.messaging.consummer;
+package com.example.messaging.consumer;
 
 import com.example.dto.event.AccountCreatedEvent;
 import com.example.service.ProfileService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.example.event.DebeziumEvent;
 import org.example.event.OutboxEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Component
@@ -67,8 +66,17 @@ public class AccountEventConsumer {
                 switch (eventType) {
                     case "ACCOUNT_CREATED", "AccountCreated", "account_created" -> {
                         AccountCreatedEvent accountEvent = objectMapper.readValue(innerJsonPayload, AccountCreatedEvent.class);
-                        log.info("Processing new account event: {}, email: {}", accountEvent.getUsername(), accountEvent.getEmail());
-                        profileService.createDefaultProfile(Long.valueOf(accountEvent.getAccountId()),accountEvent.getUsername());
+                        if (accountEvent == null || accountEvent.getAccountId() == null || accountEvent.getAccountId().isBlank()) {
+                            log.warn("Invalid account event payload (missing accountId): {}", innerJsonPayload);
+                            return;
+                        }
+                        try {
+                            Long accountId = Long.valueOf(accountEvent.getAccountId().trim());
+                            log.info("Processing new account event for userId: {}, username: {}, email: {}", accountId, accountEvent.getUsername(), accountEvent.getEmail());
+                            profileService.createDefaultProfile(accountId, accountEvent.getUsername());
+                        } catch (NumberFormatException e) {
+                            log.error("Invalid accountId format in event: {}", accountEvent.getAccountId(), e);
+                        }
                     }
                     default -> log.warn("Unhandled account event type: {}", eventType);
                 }

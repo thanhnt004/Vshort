@@ -39,12 +39,22 @@ public class RefreshTokenUseCaseImpl implements RefreshTokenUseCase {
         log.info("token data: "+ tokenData.toString());
         //lay thong tin
         String userId = tokenData.get("user_id");
+        if (userId == null || userId.isBlank()) {
+            throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        }
+        Long accountId;
+        try {
+            accountId = Long.valueOf(userId.trim());
+        } catch (NumberFormatException e) {
+            throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        }
+
         String familyId = tokenData.get("family_id");
         String status = tokenData.get("status");
         Set<String> roles = null;
         Set<String> permissions = null;
         //lay tai khoan
-        Optional<Account> account = accountRepositoryPort.findById(Long.valueOf(userId));
+        Optional<Account> account = accountRepositoryPort.findById(accountId);
         if (account.isPresent())
         {
             if (!account.get().isValid()) {
@@ -69,7 +79,15 @@ public class RefreshTokenUseCaseImpl implements RefreshTokenUseCase {
         }
         //validate used co grace
         if ("USED".equals(status)) {
-            long graceExpiry = Long.parseLong(tokenData.get("grace_expiry"));
+            String graceExpiryStr = tokenData.get("grace_expiry");
+            long graceExpiry;
+            try {
+                graceExpiry = (graceExpiryStr != null && !graceExpiryStr.isBlank()) 
+                        ? Long.parseLong(graceExpiryStr.trim()) 
+                        : 0L;
+            } catch (NumberFormatException e) {
+                graceExpiry = 0L;
+            }
 
             if (System.currentTimeMillis() <= graceExpiry) {
                 // Hợp lệ trong dung sai: Trả về token cache

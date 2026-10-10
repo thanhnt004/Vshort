@@ -63,7 +63,18 @@ public class Profile {
     private OffsetDateTime updatedAt;
 
     // Quan hệ 1:1 với UserSettings (sử dụng @PrimaryKeyJoinColumn do dùng chung PK)
-    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY,orphanRemoval = true)
     @PrimaryKeyJoinColumn
     private UserSettings userSettings;
+
+    public void setUserSettings(UserSettings userSetting)
+    {
+        if (userSetting == null)
+        {
+            if (this.userSettings != null)
+                this.userSettings.setProfile(null);
+        }else
+            userSetting.setProfile(this);
+        this.userSettings = userSetting;
+    }
 }
