@@ -1,6 +1,11 @@
 spring:
   application:
     name: user-profile-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://user-identity-service:8081/.well-known/jwks.json}
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/profile_db}
     username: ${DB_USERNAME:${SPRING_DATASOURCE_USERNAME:postgres}}
@@ -31,3 +36,10 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-service:8761/eureka/}
   instance:
     prefer-ip-address: true
+app:
+  jwt:
+    alg: RS256
+    issuer: 'NULL'
+  cookie:
+    domain: ${COOKIE_DOMAIN:localhost}
+    secure: ${COOKIE_SECURE:false}

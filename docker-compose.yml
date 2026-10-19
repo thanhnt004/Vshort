@@ -199,7 +199,7 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     ports:
-      - "8088:8080"
+      - "8200:8080"
     deploy:
       resources:
         limits:
@@ -242,6 +242,11 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       APP_GOOGLE_CALLBACK_URL: http://localhost:8088/api/v1/identity/auth/google/callback
       APP_GOOGLE_FRONTEND_SUCCESS_URL: http://localhost:5173/oauth/callback
       APP_GOOGLE_FRONTEND_ERROR_URL: http://localhost:5173/login
@@ -291,6 +296,40 @@ services:
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"
+    networks:
+      - microservice-network
+  user-profile-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: user-profile-service
+    container_name: user-profile-service
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/profile_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
     networks:
       - microservice-network
 networks:
