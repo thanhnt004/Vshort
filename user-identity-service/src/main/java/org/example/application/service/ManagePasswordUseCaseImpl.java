@@ -33,9 +33,18 @@ public class ManagePasswordUseCaseImpl implements ManagePasswordUseCase {
     private final CachePort cachePort;
     @Override
     public void changePassword(ChangePasswordCommand changePasswordCommand) {
-        Account account = accountRepositoryPort.findById(Long.valueOf(changePasswordCommand.userId()))
-                .orElseThrow(()->new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND))
-                ;
+        if (changePasswordCommand == null || changePasswordCommand.userId() == null || changePasswordCommand.userId().isBlank()) {
+            throw new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND);
+        }
+        Long userId;
+        try {
+            userId = Long.valueOf(changePasswordCommand.userId().trim());
+        } catch (NumberFormatException e) {
+            throw new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        Account account = accountRepositoryPort.findById(userId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND));
         if (!passwordEncoderPort.matches(changePasswordCommand.currentPassword(),account.getPassword().getHash()))
         {
             throw new AccountException(AccountErrorCode.PASSWORD_NOT_CORRECT);
@@ -80,10 +89,19 @@ public class ManagePasswordUseCaseImpl implements ManagePasswordUseCase {
     @Override
     public void resetPassword(ResetPasswordCommand resetPasswordCommand) {
         String hashToken = CryptoUtils.hash(resetPasswordCommand.token());
-        String userId = cachePort.get(RedisCacheAdapter.forgotPasswordKey + hashToken).orElseThrow(
+        String userIdStr = cachePort.get(RedisCacheAdapter.forgotPasswordKey + hashToken).orElseThrow(
                 ()->new AccountException(AccountErrorCode.INVALID_TOKEN)
         ).toString();
-        Account account = accountRepositoryPort.findById(Long.valueOf(userId)).orElseThrow(
+        if (userIdStr.isBlank()) {
+            throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        }
+        Long userId;
+        try {
+            userId = Long.valueOf(userIdStr.trim());
+        } catch (NumberFormatException e) {
+            throw new AccountException(AccountErrorCode.INVALID_TOKEN);
+        }
+        Account account = accountRepositoryPort.findById(userId).orElseThrow(
                 ()->new AccountException(AccountErrorCode.ACCOUNT_NOT_FOUND)
         );
         String encodedPassword = passwordEncoderPort.encode(resetPasswordCommand.newPassword());

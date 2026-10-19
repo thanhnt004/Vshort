@@ -3,7 +3,8 @@ CREATE ROLE debezium WITH SUPERUSER REPLICATION LOGIN PASSWORD 'dbz_password';
 
 -- 2. Tạo database auth_db
 CREATE DATABASE auth_db;
-CREATE DATABASE noti_db;
+CREATE DATABASE notification_db;
+CREATE DATABASE profile_db;
 -- 3. Cấp quyền mức độ Database cho debezium
 GRANT ALL PRIVILEGES ON DATABASE auth_db TO debezium;
 

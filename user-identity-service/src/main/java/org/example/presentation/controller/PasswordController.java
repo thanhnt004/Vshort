@@ -28,7 +28,7 @@ public class PasswordController {
     private final PasswordWebMapper mapper;
     @PreAuthorize(value = "isAuthenticated()")
     @PostMapping(value = "/change-password")
-    public ResponseEntity<?> changePassword(@AuthenticationPrincipal Jwt jwt, @RequestBody ChangePasswordRequest changePasswordRequest)
+    public ResponseEntity<?> changePassword(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ChangePasswordRequest changePasswordRequest)
     {
         managePasswordUseCase.changePassword(mapper.toCommand(changePasswordRequest,jwt.getSubject()));
         return ResponseEntity.noContent().build();

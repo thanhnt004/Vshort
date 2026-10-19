@@ -28,6 +28,7 @@
         <module>common-lib</module>
         <module>notification-service</module>
         <module>user-profile-service</module>
+        <module>video-service</module>
     </modules>
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
