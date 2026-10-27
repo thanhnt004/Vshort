@@ -1,7 +1,7 @@
 
 spring:
   application:
-    name: config-servie
+    name: config-service
   cloud:
     config:
       server:
@@ -9,5 +9,9 @@ spring:
           uri: https://github.com/thanhnt004/Vshort-config.git
           default-label: main
           search-paths: '{application}'
+          basedir: /app/config-cache # Hoặc ./config-cache nếu chạy local
+          clone-on-start: true
+          force-pull: true
+          refresh-rate: 0
 server:
   port: 8888

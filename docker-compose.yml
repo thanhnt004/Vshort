@@ -1,4 +1,26 @@
 services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: vshort-seaweedfs
+    ports:
+      - "8333:8333"
+      - "9001:8888" # Giao diện Web quản lý file & tạo bucket (Filer UI)
+      - "9333:9333" # Giao diện quản lý Cluster Master
+      - "19333:19333"
+    command: >
+      server
+      -dir=/data
+      -ip.bind=0.0.0.0
+      -filer
+      -s3
+      -s3.port=8333
+      -s3.config=/etc/seaweedfs/s3.json
+    volumes:
+      - ./s3.json:/etc/seaweedfs/s3.json:ro
+      - seaweedfs_data:/data
+    restart: unless-stopped
+    networks:
+      - microservice-network
   redis:
     image: redis:7.4-alpine
     container_name: vs_redis
@@ -332,10 +354,45 @@ services:
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
     networks:
       - microservice-network
+  video-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: video-service
+    container_name: video-service
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/video_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    networks:
+      - microservice-network
 networks:
   microservice-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  seaweedfs_data:
   redis_data:
