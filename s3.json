@@ -1,0 +1,28 @@
+{
+  "identities": [
+    {
+      "name": "admin",
+      "credentials": [
+        {
+          "accessKey": "S3storageAdmin",
+          "secretKey": "S3storageAdmin"
+        }
+      ],
+      "actions": [
+        "Admin",
+        "Read",
+        "Write",
+        "List",
+        "Tagging"
+      ]
+    },
+    {
+      "name": "anonymous",
+      "credentials": [],
+      "actions": [
+        "Read"
+      ]
+    }
+  ],
+  "sts": { "signingKey": "q8W3kZ9vN2mP5rT1xY4bC7jL0eA6sD8fH" }
+}
